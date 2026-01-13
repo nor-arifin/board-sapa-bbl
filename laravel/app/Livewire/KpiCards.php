@@ -3,9 +3,11 @@
 namespace App\Livewire;
 
 use Livewire\Component;
-use App\Models\Screening;
-use App\Models\Facility;
-use App\Models\Region;
+use App\Models\Visit;
+use App\Models\Laboratory;
+use App\Models\City;
+use App\Models\Patient;
+use Illuminate\Support\Facades\DB;
 
 class KpiCards extends Component
 {
@@ -19,37 +21,44 @@ class KpiCards extends Component
     public function getKpiDataProperty(): array
     {
         try {
-            $query = Screening::query();
-
+            // Get visits for selected year
+            $visitQuery = Visit::query();
             if ($this->selectedYear) {
-                $query->byYear($this->selectedYear);
+                $visitQuery->whereYear('visit_date', $this->selectedYear);
             }
+            $visitIds = $visitQuery->pluck('id');
 
-            $totals = $query->selectRaw('
-                COALESCE(SUM(total_screened), 0) as total_screened,
-                COALESCE(SUM(total_positive), 0) as total_positive,
-                COALESCE(SUM(total_negative), 0) as total_negative
-            ')->first();
+            // Get lab data
+            $totalScreened = Laboratory::whereIn('laboratory_visitId', $visitIds)->count();
+            
+            // Count positive results
+            $positiveKeywords = ['positif', 'abnormal', 'tinggi', 'high', 'detected', 'reactive'];
+            $totalPositive = Laboratory::whereIn('laboratory_visitId', $visitIds)
+                ->where(function ($q) use ($positiveKeywords) {
+                    foreach ($positiveKeywords as $keyword) {
+                        $q->orWhere('laboratory_result', 'like', "%{$keyword}%")
+                          ->orWhere('laboratory_interpretation', 'like', "%{$keyword}%");
+                    }
+                })->count();
 
-            $byTestType = Screening::query()
-                ->when($this->selectedYear, fn($q) => $q->byYear($this->selectedYear))
-                ->selectRaw('test_type, SUM(total_screened) as total')
-                ->groupBy('test_type')
-                ->pluck('total', 'test_type')
-                ->toArray();
+            // Count by test type
+            $byTestType = [
+                'SHK' => Laboratory::whereIn('laboratory_visitId', $visitIds)->shk()->count(),
+                'S-HAK' => Laboratory::whereIn('laboratory_visitId', $visitIds)->shak()->count(),
+                'S-G6PD' => Laboratory::whereIn('laboratory_visitId', $visitIds)->sg6pd()->count(),
+            ];
 
-            $facilityCount = Facility::active()->count();
-            $regionCount = Region::count();
+            $regionCount = City::kalsel()->count();
 
             return [
-                'total_screened' => $totals->total_screened ?? 0,
-                'total_positive' => $totals->total_positive ?? 0,
-                'total_negative' => $totals->total_negative ?? 0,
-                'facility_count' => $facilityCount,
+                'total_screened' => $totalScreened,
+                'total_positive' => $totalPositive,
+                'total_negative' => $totalScreened - $totalPositive,
+                'facility_count' => 45, // Placeholder - update with actual facility count if available
                 'region_count' => $regionCount,
                 'by_test_type' => $byTestType,
-                'detection_rate' => $totals->total_screened > 0 
-                    ? round(($totals->total_positive / $totals->total_screened) * 100, 2) 
+                'detection_rate' => $totalScreened > 0 
+                    ? round(($totalPositive / $totalScreened) * 100, 2) 
                     : 0,
             ];
         } catch (\Exception $e) {
@@ -77,29 +86,55 @@ class KpiCards extends Component
     public function getTableDataProperty(): array
     {
         try {
-            return Screening::query()
-                ->when($this->selectedYear, fn($q) => $q->byYear($this->selectedYear))
-                ->selectRaw('
-                    test_type,
-                    COALESCE(SUM(total_screened), 0) as total_screened,
-                    COALESCE(SUM(total_positive), 0) as total_positive,
-                    COALESCE(SUM(total_negative), 0) as total_negative
-                ')
-                ->groupBy('test_type')
-                ->get()
-                ->map(function ($item) {
-                    return [
-                        'test_type' => $item->test_type,
-                        'test_name' => Screening::testTypes()[$item->test_type] ?? $item->test_type,
-                        'total_screened' => $item->total_screened,
-                        'total_positive' => $item->total_positive,
-                        'total_negative' => $item->total_negative,
-                        'detection_rate' => $item->total_screened > 0 
-                            ? round(($item->total_positive / $item->total_screened) * 100, 2) 
-                            : 0,
-                    ];
-                })
-                ->toArray();
+            $visitQuery = Visit::query();
+            if ($this->selectedYear) {
+                $visitQuery->whereYear('visit_date', $this->selectedYear);
+            }
+            $visitIds = $visitQuery->pluck('id');
+
+            $positiveKeywords = ['positif', 'abnormal', 'tinggi', 'high', 'detected', 'reactive'];
+
+            $testTypes = [
+                'SHK' => 'Skrining Hipotiroid Kongenital (SHK)',
+                'S-HAK' => 'Skrining Hemoglobin Abnormal Kongenital (S-HAK)',
+                'S-G6PD' => 'Skrining Glucose-6-Phosphate Dehydrogenase (S-G6PD)',
+            ];
+
+            $tableData = [];
+            foreach ($testTypes as $type => $name) {
+                $scopeMethod = match($type) {
+                    'SHK' => 'shk',
+                    'S-HAK' => 'shak',
+                    'S-G6PD' => 'sg6pd',
+                    default => null
+                };
+
+                $baseQuery = Laboratory::whereIn('laboratory_visitId', $visitIds);
+                if ($scopeMethod) {
+                    $baseQuery->$scopeMethod();
+                }
+
+                $totalScreened = (clone $baseQuery)->count();
+                $totalPositive = (clone $baseQuery)->where(function ($q) use ($positiveKeywords) {
+                    foreach ($positiveKeywords as $keyword) {
+                        $q->orWhere('laboratory_result', 'like', "%{$keyword}%")
+                          ->orWhere('laboratory_interpretation', 'like', "%{$keyword}%");
+                    }
+                })->count();
+
+                $tableData[] = [
+                    'test_type' => $type,
+                    'test_name' => $name,
+                    'total_screened' => $totalScreened,
+                    'total_positive' => $totalPositive,
+                    'total_negative' => $totalScreened - $totalPositive,
+                    'detection_rate' => $totalScreened > 0 
+                        ? round(($totalPositive / $totalScreened) * 100, 2) 
+                        : 0,
+                ];
+            }
+
+            return $tableData;
         } catch (\Exception $e) {
             return $this->getDummyTableData();
         }

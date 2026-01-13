@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="SAPA-BBL - Sistem Skrining Bayi Baru Lahir Laboratorium Kesehatan Provinsi Kalimantan Selatan untuk deteksi dini kelainan bawaan">
-    <title>SAPA-BBL | Labkes Prov Kalimantan Selatan</title>
+    <title>SAPA-BBL | LABKESPROV KALSEL</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -121,7 +121,7 @@
                     <a href="#program" class="text-gray-600 hover:text-primary-dark transition-colors font-medium">Program</a>
                     <a href="#peta" class="text-gray-600 hover:text-primary-dark transition-colors font-medium">Peta Distribusi</a>
                     <a href="#capaian" class="text-gray-600 hover:text-primary-dark transition-colors font-medium">Capaian</a>
-                    <a href="https://apps.sapa-bbl.id" target="_blank" class="inline-flex items-center px-5 py-2.5 bg-primary hover:bg-primary-dark text-white font-semibold rounded-lg transition-colors shadow-md hover:shadow-lg">
+                    <a href="https://app.sapa-bbl.id" target="_blank" class="inline-flex items-center px-5 py-2.5 bg-primary hover:bg-primary-dark text-white font-semibold rounded-lg transition-colors shadow-md hover:shadow-lg">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
                         </svg>

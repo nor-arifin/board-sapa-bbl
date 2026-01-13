@@ -9,16 +9,30 @@ services:
     working_dir: /var/www/html
     volumes:
       - ./laravel:/var/www/html
+    environment:
+      - APP_NAME=Board-SAPA-BBL
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - APP_URL=https://sapa-bbl.id
+      - DB_CONNECTION=mysql
+      - DB_HOST=sapabbl-application-1okzop-mysql-1
+      - DB_PORT=3306
+      - DB_DATABASE=sapa_db
+      - DB_USERNAME=sapa_user
+      - DB_PASSWORD=bdTrL5xTiXSBLNiT4VALWpITsX05TVzo1PbeyjguaWw=
+      - REDIS_HOST=board-sapa-redis
+      - REDIS_PORT=6379
+      - CACHE_DRIVER=redis
+      - SESSION_DRIVER=redis
     depends_on:
       - redis
     networks:
       - boardsapa-net
+      - dokploy-network
 
   nginx:
     image: nginx:1.27-alpine
     container_name: board-sapa-nginx
-    ports:
-      - "9000:80"
     volumes:
       - ./laravel:/var/www/html
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
@@ -26,15 +40,36 @@ services:
       - app
     networks:
       - boardsapa-net
+      - dokploy-network
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=dokploy-network"
+      # Service definition
+      - "traefik.http.services.board-sapa.loadbalancer.server.port=80"
+      # HTTPS Router - sapa-bbl.id (landing page)
+      - "traefik.http.routers.board-sapa.rule=Host(`sapa-bbl.id`)"
+      - "traefik.http.routers.board-sapa.entrypoints=websecure"
+      - "traefik.http.routers.board-sapa.tls=true"
+      - "traefik.http.routers.board-sapa.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.board-sapa.service=board-sapa"
+      # HTTP Router with redirect
+      - "traefik.http.routers.board-sapa-http.rule=Host(`sapa-bbl.id`)"
+      - "traefik.http.routers.board-sapa-http.entrypoints=web"
+      - "traefik.http.routers.board-sapa-http.middlewares=board-sapa-redirect-https"
+      # Redirect middleware
+      - "traefik.http.middlewares.board-sapa-redirect-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.board-sapa-redirect-https.redirectscheme.permanent=true"
 
   redis:
     image: redis:7-alpine
     container_name: board-sapa-redis
-    ports:
-      - "9002:6379"
     networks:
       - boardsapa-net
+    restart: unless-stopped
 
 networks:
   boardsapa-net:
     driver: bridge
+  dokploy-network:
+    external: true
