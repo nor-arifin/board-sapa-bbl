@@ -18,8 +18,8 @@ services:
       - DB_HOST=sapabbl-application-1okzop-mysql-1
       - DB_PORT=3306
       - DB_DATABASE=sapa_db
-      - DB_USERNAME=sapa_user
-      - DB_PASSWORD=Usr@SapaBBL2026!Qw7
+      - DB_USERNAME=boardsapa
+      - DB_PASSWORD=boardsapa123
       - REDIS_HOST=board-sapa-redis
       - REDIS_PORT=6379
       - CACHE_DRIVER=redis
