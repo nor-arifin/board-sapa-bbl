@@ -19,7 +19,7 @@ services:
       - DB_PORT=3306
       - DB_DATABASE=sapa_db
       - DB_USERNAME=sapa_user
-      - DB_PASSWORD=bdTrL5xTiXSBLNiT4VALWpITsX05TVzo1PbeyjguaWw=
+      - DB_PASSWORD=Usr@SapaBBL2026!Qw7
       - REDIS_HOST=board-sapa-redis
       - REDIS_PORT=6379
       - CACHE_DRIVER=redis
@@ -27,7 +27,7 @@ services:
     depends_on:
       - redis
     networks:
-      - boardsapa-net
+      - sapa-network
       - dokploy-network
 
   nginx:
@@ -39,7 +39,7 @@ services:
     depends_on:
       - app
     networks:
-      - boardsapa-net
+      - sapa-network
       - dokploy-network
     restart: unless-stopped
     labels:
@@ -65,11 +65,12 @@ services:
     image: redis:7-alpine
     container_name: board-sapa-redis
     networks:
-      - boardsapa-net
+      - sapa-network
     restart: unless-stopped
 
 networks:
-  boardsapa-net:
-    driver: bridge
+  sapa-network:
+    external: true
+    name: sapa-network
   dokploy-network:
     external: true
