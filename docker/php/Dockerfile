@@ -22,7 +22,8 @@ RUN apk add --no-cache autoconf g++ make \
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-WORKDIR /var/www/html
+# Build app in temporary directory
+WORKDIR /app-build
 
 COPY laravel/. .
 
@@ -30,10 +31,12 @@ RUN composer install --optimize-autoloader --no-dev
 
 RUN npm install && npm run build
 
-RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 775 /var/www/html/storage \
-    && chmod -R 775 /var/www/html/bootstrap/cache
+# Set up entrypoint
+WORKDIR /var/www/html
+
+COPY docker/php/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 EXPOSE 9000
 
-CMD ["php-fpm"]
+ENTRYPOINT ["/entrypoint.sh"]

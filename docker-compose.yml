@@ -8,11 +8,12 @@ services:
     container_name: board-sapa-app
     working_dir: /var/www/html
     volumes:
-      - ./laravel:/var/www/html
+      - app-data:/var/www/html
     environment:
       - APP_NAME=Board-SAPA-BBL
       - APP_ENV=production
       - APP_DEBUG=false
+      - APP_KEY=base64:YKHLiM11aQbDHlKtmoie/skPfzux0j5HSw4YsY70E/k=
       - APP_URL=https://sapa-bbl.id
       - DB_CONNECTION=mysql
       - DB_HOST=sapabbl-application-1okzop-mysql-1
@@ -20,26 +21,25 @@ services:
       - DB_DATABASE=sapa_db
       - DB_USERNAME=boardsapa
       - DB_PASSWORD=boardsapa123
-      - REDIS_HOST=board-sapa-redis
+      - REDIS_HOST=redis
       - REDIS_PORT=6379
       - CACHE_DRIVER=redis
       - SESSION_DRIVER=redis
     depends_on:
       - redis
     networks:
-      - sapa-network
       - dokploy-network
+      - sapa-network
 
   nginx:
     image: nginx:1.27-alpine
     container_name: board-sapa-nginx
     volumes:
-      - ./laravel:/var/www/html
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - app-data:/var/www/html:ro
     depends_on:
       - app
     networks:
-      - sapa-network
       - dokploy-network
     restart: unless-stopped
     labels:
@@ -74,3 +74,5 @@ networks:
     name: sapa-network
   dokploy-network:
     external: true
+volumes:
+  app-data:
