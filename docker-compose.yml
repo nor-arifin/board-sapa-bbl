@@ -1,5 +1,7 @@
 version: "3.9"
 
+# Policy: Remove orphaned containers on startup to prevent conflicts
+# This helps prevent "container name already in use" errors
 services:
   app:
     build:
